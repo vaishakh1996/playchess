@@ -18,7 +18,7 @@ import ros_numpy
 #ROS message 
 from sensor_msgs.msg import Image
 
-PLAYCHESS_PKG_DIR = '/home/vaishakh/scripts/vaishakh_scripts/Static_images'
+PLAYCHESS_PKG_DIR = '/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_images'
 
 
 class image_processing():
@@ -32,13 +32,14 @@ class image_processing():
         1. used in image_analysis befor findContour
         '''
         edges =cv2.Canny(img,
-                         50,    # min_threshold: adjusting it helps to distinguish beteween brown boundary and black  square near to it
+                         25,    # min_threshold: adjusting it helps to distinguish beteween brown boundary and black  square near to it
                          255
                         )
 
         #DEBUG
         if self.debug:
             cv2.imshow('Canny',edges)
+            cv2.waitKey(0)
         
         return edges
 
@@ -196,44 +197,53 @@ class image_processing():
         """
 
         # Corners array / Each list in list represents a row of corners
-        corners = [[],[],[],[],[],[],[],[],[]]
+        corners = []
 
-        # Sort rows (ascending)
-        intersections.sort(key=lambda x: x[1])
+        
         '''
-        key = lambda for sorting x wrt the second element here the secon element is y-co-ordinate of the points'''
+        key = lambda for sorting x wrt the second element here the secon element is y-co-ordinate of the points '''
 
-        # Assign rows first, afterwards it's possible to swap them around within their rows for correct sequence
-        row = 0
-        rowAssignmentThreshold = 10
 
-        for i in range(1, len(intersections)):
-            if intersections[i][1] in range(intersections[i - 1][1] - rowAssignmentThreshold,
-                                            intersections[i - 1][1] + rowAssignmentThreshold):
-                corners[row].append(intersections[i - 1])
-            else:
-                corners[row].append(intersections[i - 1])
-                row += 1
-            # For last corner
-            if i == len(intersections) - 1:
-                corners[row].append(intersections[i])
-
-        # Sort by x-coordinate within row to get correct sequence
         for row in corners:
-            row.sort(key=lambda x: x[0])
+             row.sort(key=lambda x: x[0])
+        '''
+        above code use ule if chess board parallel to camera
+        '''
+        # Sort auatomaticall in order left to right top to bot saved in a list
+        print(intersections)
+        print('end')
+        
+        print(intersections)
+     
+                
+
+        del intersections[0:11]
+        del intersections[-11:len(intersections)]
+        del intersections[0:len(intersections):11]
+        del intersections[9:len(intersections):10]
+        
+        print(type(intersections))
+
 
         ## DEBUG
         if self.debug:
+            
+            print(intersections)
+            
+            
 
             cornerCounter = 0
 
             debugImg = image.copy()
-            for row in corners:
-                for corner in row:
-                    cv2.circle(debugImg, corner, 10, 255, 1)
-                    cornerCounter += 1
+            #for row in corners:
+            for corner in intersections:
+                #for corner in row:
+                    # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
+                    # cornerCounter += 1
+                 cv2.circle(debugImg, corner, 10, (0,255,0), 1)
+                 cornerCounter += 1
 
-            cv2.imshow("4 Final Corners", debugImg)
+            cv2.imshow("Final Corners", debugImg)
             
 
             print("")
@@ -241,7 +251,7 @@ class image_processing():
             print("")
 
 
-        return corners, image
+        return intersections, image
     
     # Image_preprocessing
     def preprocessing(self, img,kernelG=5):
@@ -272,7 +282,7 @@ class image_processing():
         ### Chessboard counter extration
 
         # # canny edge detection
-        preprocessed_img = self.cannyEdgeDetection(preprocessed_img)
+        #preprocessed_img = self.cannyEdgeDetection(preprocessed_img)
          
 
         #Find countours 
@@ -340,13 +350,16 @@ class image_processing():
         # # add same colored line to remove chess board edges
         cv2.polylines(extracted, [chessboardEdge], True, (0, 255, 0), thickness=5)
 
+
+        #chessboardEdge = chessboardEdge[0][0]
         #DEBUD
         if self.debug:
-        
+            print('chessBord edges')
+            print(chessboardEdge)
             #cv2.imshow("1 Masked", extracted)
             cv2.waitKey(0)
 
-        return extracted
+        return extracted,chessboardEdge
 
     
  
@@ -354,17 +367,16 @@ class image_processing():
 
 if __name__ == "__main__":
     
-    img = cv2.imread('/home/vaishakh/scripts/vaishakh_scripts/Static_images/empty_chess_board.png')
+    img = cv2.imread('/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_images/imagefloor_funny.png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
-    analysed_img = ip.image_analysis(img,preprocessed_img)
+    preprocessed_img = ip.cannyEdgeDetection(preprocessed_img)
+    #Chessboard edges used to eliminate unwanted point in assign intersections function
+    analysed_img, chessBoardEdges = ip.image_analysis(img,preprocessed_img)
     canny_img = ip.cannyEdgeDetection(analysed_img)
     hor,ver = ip.houghLines(canny_img,img)
     intersections = ip.findIntersections(hor,ver,img)
     corner, image = ip.assignIntersections(img, intersections)
-
-
-    cv2.imwrite(PLAYCHESS_PKG_DIR + '/test.png', img)
     cv2.imshow('Finalimg',analysed_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
