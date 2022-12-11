@@ -1,3 +1,4 @@
 *.bag
 *.png
 *.log
+*.pyc

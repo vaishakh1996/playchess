@@ -1,4 +1,4 @@
-#!/user/bin/env python
+#!/user/bin/env python2
 
 #Python libs
 import numpy as np
@@ -8,12 +8,13 @@ import sys
 import operator
 # user defined classes
 from perceptionLineClass import Line, filterClose
+from perceptionsquareClass import Square
 # acessing directories
 import os
 
 #ROS libs/packs
-import rospy
-import ros_numpy
+# import rospy
+# import ros_numpy
 
 #ROS message 
 from sensor_msgs.msg import Image
@@ -23,7 +24,7 @@ PLAYCHESS_PKG_DIR = '/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_im
 
 class image_processing():
     def __init__(self):
-        self.debug = True
+        self.debug = 0
     
     #Canny edge function
     def cannyEdgeDetection(self, img):
@@ -62,14 +63,14 @@ class image_processing():
         
         return horizontal,vertical
     
-    def houghLines(self, edges, img):
+    def houghLines(self, edges, img, thresholdx=40, minLineLengthy=100, maxLineGapz=50):
         """
         Detects Hough lines
         edge- o/p of canny
         """
 
         # Detect hough lines
-        lines = cv2.HoughLinesP(edges, rho=1, theta=1 * np.pi / 180, threshold=40, minLineLength=100, maxLineGap=50)
+        lines = cv2.HoughLinesP(edges, rho=1, theta=1 * np.pi / 180, threshold=thresholdx, minLineLength=minLineLengthy, maxLineGap=maxLineGapz)
         N = lines.shape[0]
 
         # Draw lines on image
@@ -91,6 +92,10 @@ class image_processing():
         # STANDARD THRESHOLD SHOULD BE 20
         ver = filterClose(vertical, horizontal=False, threshold=20)
         hor = filterClose(horizontal, horizontal=True, threshold=20)
+        
+        '''
+        Adjusting arguments of cv2.HoughLinesP
+        '''
         
         # DEBUG TO SHOW LINES
         print(len(ver))
@@ -224,7 +229,7 @@ class image_processing():
         
         print(type(intersections))
 
-
+        
         ## DEBUG
         if self.debug:
             
@@ -361,22 +366,104 @@ class image_processing():
 
         return extracted,chessboardEdge
 
+    #Square Instantiation
+    def makeSquares(self, corners, depthImage, image):
+        '''
+        Instatiates the 64 squares given 81 corner points.
+        '''
+        #List of square objects
+        squares = []
+        coordinates = []
+        #Lists containing positional and index information
+        letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        numbers = ['1', '2', '3', '4', '5', '6', '7', '8']
+        index = 0
+
+        #print(corners)
+
+        for i in range(8):
+            for j in range(8):
+                # Make the square - yay!
+                position = letters[-i-1] + numbers[-j-1]
+                c1 = corners[i][j]
+                c2 = corners[i][j+1]
+                c3 = corners[i+1][j+1]
+                c4 = corners[i+1][j]
+                square = Square(position, c1, c2, c3, c4, index, image)
+                #print(c1, c2, c3, c4)
+                squares.append(square)
+
+                square.draw(image)
+
+                index += 1
+                #print(index)
+                #xyz = square.getDepth(depthImage)
+                #coordinates.append(xyz)
+
+        cv2.imshow("Board Identified", image)
+
+        if self.debug:
+            cv2.imwrite("5SquaresIdentified.jpeg", image)
+            cv2.waitKey(0)
     
  
  #MAIN 
 
 if __name__ == "__main__":
     
-    img = cv2.imread('/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_images/imagefloor_funny.png')
+    img = cv2.imread('/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_images/non_empty_chess_board.png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
-    preprocessed_img = ip.cannyEdgeDetection(preprocessed_img)
+    pre_canny = ip.cannyEdgeDetection(preprocessed_img)
     #Chessboard edges used to eliminate unwanted point in assign intersections function
-    analysed_img, chessBoardEdges = ip.image_analysis(img,preprocessed_img)
+    analysed_img, chessBoardEdges = ip.image_analysis(img,pre_canny)
     canny_img = ip.cannyEdgeDetection(analysed_img)
     hor,ver = ip.houghLines(canny_img,img)
     intersections = ip.findIntersections(hor,ver,img)
     corner, image = ip.assignIntersections(img, intersections)
+    
+    def call_back(x):
+        pass
+        
+    
+    cv2.namedWindow('adjust_Hough_parameter')
+    cv2.createTrackbar('threshold','adjust_Hough_parameter',10, 200, call_back)
+    cv2.createTrackbar('min_line_length','adjust_Hough_parameter',10, 200, call_back)
+    cv2.createTrackbar('max_line_gap','adjust_Hough_parameter',10, 200, call_back)
+    cv2.createTrackbar('k','adjust_Hough_parameter',0, 1, call_back)
+    switch = '0 : OFF\n 1 : ON'
+    cv2.createTrackbar(switch,'adjust_Hough_parameter',0, 1, call_back)
+    k=0
+    while(k!=1):
+            track_img = img.copy()
+            cornerCounter = 0
+            for corner in intersections:
+                #for corner in row:
+                    # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
+                    # cornerCounter += 1
+                 cv2.circle(track_img, corner, 10, (0,255,255), 1)
+                 cornerCounter += 1
+            cv2.imshow('adjust_Hough_paramete', track_img)
+            cv2.waitKey(30)
+            s=cv2.getTrackbarPos(switch,'adjust_Hough_parameter')
+            k=cv2.getTrackbarPos('k','adjust_Hough_parameter')
+            if s == 0:
+                pass
+            else:
+                thresholdx= cv2.getTrackbarPos('threshold','adjust_Hough_parameter')
+                minLineLengthy=cv2.getTrackbarPos('min_line_length','adjust_Hough_parameter')
+                maxLineGapz=cv2.getTrackbarPos('max_line_gap','adjust_Hough_parameter')
+            
+                hor,ver = ip.houghLines(canny_img,img,thresholdx,minLineLengthy,maxLineGapz)
+                intersections = ip.findIntersections(hor,ver,img)
+                corner, image = ip.assignIntersections(img, intersections)
+
+
+
+
+    #ip.makeSquares(corner,image)
     cv2.imshow('Finalimg',analysed_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+  
