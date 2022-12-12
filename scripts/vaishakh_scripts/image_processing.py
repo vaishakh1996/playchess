@@ -154,7 +154,7 @@ class image_processing():
         ### FILTER
 
         # Filtering intersection points
-        minDistance = 10 
+        minDistance = 10
         '''
         lowering minDistance can help find corners far from tiago due to perspective distortion '''
 
@@ -257,6 +257,51 @@ class image_processing():
 
 
         return intersections, image
+        
+        #Trackbar for setting the Hough parameters
+    def track_bar(self,img,canny_img,intersections):
+        '''
+        for mannually setting up values of Hough parameter to corretly detect the square corners
+        '''
+        def call_back(x):
+            pass
+            
+        
+        cv2.namedWindow('adjust_Hough_parameter', cv2.WINDOW_NORMAL)
+        cv2.createTrackbar('threshold','adjust_Hough_parameter',40, 200, call_back)
+        cv2.createTrackbar('min_line_length','adjust_Hough_parameter',100, 200, call_back)
+        cv2.createTrackbar('max_line_gap','adjust_Hough_parameter',50, 200, call_back)
+        cv2.createTrackbar('off','adjust_Hough_parameter',0, 1, call_back)
+        switch = '0 : NOT_ACTIVE \n 1 : ACTIVE'
+        cv2.createTrackbar(switch,'adjust_Hough_parameter',0, 1, call_back)
+        off=0
+        while(off!=1):
+                track_img = img.copy()
+                cornerCounter = 0
+                for corner in intersections:
+                    #for corner in row:
+                        # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
+                        # cornerCounter += 1
+                    cv2.circle(track_img, corner, 10, (0,255,255), 1)
+                    cornerCounter += 1
+                cv2.imshow('adjust_Hough_paramete', track_img)
+                cv2.waitKey(30)
+                s=cv2.getTrackbarPos(switch,'adjust_Hough_parameter')
+                
+                if s == 0:
+                    pass
+                else:
+                    off=cv2.getTrackbarPos('off','adjust_Hough_parameter')
+                    thresholdx= cv2.getTrackbarPos('threshold','adjust_Hough_parameter')
+                    minLineLengthy=cv2.getTrackbarPos('min_line_length','adjust_Hough_parameter')
+                    maxLineGapz=cv2.getTrackbarPos('max_line_gap','adjust_Hough_parameter')
+                
+                    hor,ver = self.houghLines(canny_img,img,thresholdx,minLineLengthy,maxLineGapz)
+                    intersections = self.findIntersections(hor,ver,img)
+                    corner, image = self.assignIntersections(img, intersections)
+
+
+
     
     # Image_preprocessing
     def preprocessing(self, img,kernelG=5):
@@ -411,7 +456,7 @@ class image_processing():
 
 if __name__ == "__main__":
     
-    img = cv2.imread('/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_images/non_empty_chess_board.png')
+    img = cv2.imread('/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_images/empty_chess_board.png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
     pre_canny = ip.cannyEdgeDetection(preprocessed_img)
@@ -421,44 +466,8 @@ if __name__ == "__main__":
     hor,ver = ip.houghLines(canny_img,img)
     intersections = ip.findIntersections(hor,ver,img)
     corner, image = ip.assignIntersections(img, intersections)
+    ip.track_bar(img,canny_img,corner)
     
-    def call_back(x):
-        pass
-        
-    
-    cv2.namedWindow('adjust_Hough_parameter')
-    cv2.createTrackbar('threshold','adjust_Hough_parameter',10, 200, call_back)
-    cv2.createTrackbar('min_line_length','adjust_Hough_parameter',10, 200, call_back)
-    cv2.createTrackbar('max_line_gap','adjust_Hough_parameter',10, 200, call_back)
-    cv2.createTrackbar('k','adjust_Hough_parameter',0, 1, call_back)
-    switch = '0 : OFF\n 1 : ON'
-    cv2.createTrackbar(switch,'adjust_Hough_parameter',0, 1, call_back)
-    k=0
-    while(k!=1):
-            track_img = img.copy()
-            cornerCounter = 0
-            for corner in intersections:
-                #for corner in row:
-                    # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
-                    # cornerCounter += 1
-                 cv2.circle(track_img, corner, 10, (0,255,255), 1)
-                 cornerCounter += 1
-            cv2.imshow('adjust_Hough_paramete', track_img)
-            cv2.waitKey(30)
-            s=cv2.getTrackbarPos(switch,'adjust_Hough_parameter')
-            k=cv2.getTrackbarPos('k','adjust_Hough_parameter')
-            if s == 0:
-                pass
-            else:
-                thresholdx= cv2.getTrackbarPos('threshold','adjust_Hough_parameter')
-                minLineLengthy=cv2.getTrackbarPos('min_line_length','adjust_Hough_parameter')
-                maxLineGapz=cv2.getTrackbarPos('max_line_gap','adjust_Hough_parameter')
-            
-                hor,ver = ip.houghLines(canny_img,img,thresholdx,minLineLengthy,maxLineGapz)
-                intersections = ip.findIntersections(hor,ver,img)
-                corner, image = ip.assignIntersections(img, intersections)
-
-
 
 
     #ip.makeSquares(corner,image)
