@@ -7,8 +7,8 @@ import math
 import sys
 import operator
 # user defined classes
-from perceptionLineClass import Line, filterClose
-from perceptionsquareClass import Square
+from useful_functions.perceptionLineClass import Line, filterClose
+from useful_functions.perceptionsquareClass import Square
 # acessing directories
 import os
 
@@ -43,6 +43,14 @@ class image_processing():
             cv2.waitKey(0)
 
         return edges
+
+    def dilation(self, image, kernel_size=(1, 1), iterations=1):
+        kernel = np.ones(kernel_size, np.uint8)
+        dilated = cv2.dilate(image, kernel, iterations)
+        if self.debug:
+            cv2.imshow('Edge dilation', dilated)
+            cv2.waitKey(0)
+        return dilated
 
     # Hough line
     def categoriseLines(self, lines):
@@ -163,6 +171,7 @@ class image_processing():
         # Now also works if run only once so comment the loop out
         for i in range(4):
             for intersection in intersections:
+                a = False
                 for neighbor in intersections:
                     distanceToNeighbour = np.sqrt(
                         (intersection[0] - neighbor[0]) ** 2 + (intersection[1] - neighbor[1]) ** 2)
@@ -216,15 +225,14 @@ class image_processing():
         above code use ule if chess board parallel to camera
         '''
         # Sort auatomaticall in order left to right top to bot saved in a list
-        print(intersections)
-        print('end')
 
-        print(intersections)
+        print('end')
 
         del intersections[0:11]
         del intersections[-11:len(intersections)]
         del intersections[0:len(intersections):11]
         del intersections[9:len(intersections):10]
+        print(intersections)
 
         print(type(intersections))
 
@@ -251,7 +259,17 @@ class image_processing():
                   " corners that were found.")
             print("")
 
-        return intersections, image
+        # sorting intersection to an 2d arry for chess board pattern and easy square centoid calculation
+        sorted_intersections = [[], [], [], [], [], [], [], [], []]
+        k = 0
+        if len(intersections) == 81:
+            for i in range(9):
+                for j in range(9):
+                    sorted_intersections[i].append(intersections[k])
+                    k += 1
+            print(
+                f'sorted{sorted_intersections} ')
+        return intersections, sorted_intersections, image
 
         """
     SQUARE INSTANTIATION
@@ -278,34 +296,60 @@ class image_processing():
                 position = letters[-i-1] + numbers[-j-1]
                 c1 = corners[i][j]
                 c2 = corners[i][j+1]
-                c3 = corners[i+1][j+1]
-                c4 = corners[i+1][j]
-                square = Square(position, c1, c2, c3, c4, index, image)
-                # print(c1, c2, c3, c4)
-                squares.append(square)
+                c3 = corners[i+1][j]
+                c4 = corners[i+1][j+1]
+                '''check for type conversion'''
+                centerx = int((c1[0]+c2[0]+c3[0]+c4[0])/4)
+                centery = int((c1[1]+c2[1]+c3[1]+c4[1])/4)
 
-                square.draw(image)
-
-                index += 1
-                # print(index)
-                xyz = square.getDepth(depthImage)
-                coordinates.append(xyz)
-
-        cv2.imshow("Board Identified", image)
-
-        if self.debug:
-            cv2.imwrite("5SquaresIdentified.jpeg", image)
-
-        # Get x,y,z coordinates from square centers & depth image
-        # coordinates = self.getDepth(square.roi, depthImage)
+                center = (centerx,
+                          centery)
+                print(c1, c2, c3, c4, center)
+                squares.append(center)
+        print(squares, len(squares))
         # DEBUG
-        if self.debug:
-            print("Number of Squares found: " + str(len(squares)))
+        if self.debug == 0:
 
-        return squares
+            squareCenters = 0
+
+            debugImg = image.copy()
+            # for row in corners:
+            for center_ in squares:
+                # for corner in row:
+                # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
+                # cornerCounter += 1
+                cv2.circle(debugImg, center_, 5, (0, 255, 0), -1)
+                cornerCounter += 1
+
+            cv2.imshow("Final centers", debugImg)
+
+            print("")
+            print("There are: " + str(squareCenters) +
+                  " centers that were found.")
+            print("")
+
+        #         square.draw(image)
+
+        #         index += 1
+        #         # print(index)
+        #         # xyz = square.getDepth(depthImage)
+        #         # coordinates.append(xyz)
+
+        # cv2.imshow("Board Identified", image)
+
+        # if self.debug:
+        #     cv2.imwrite("5SquaresIdentified.jpeg", image)
+
+        # # Get x,y,z coordinates from square centers & depth image
+        # # coordinates = self.getDepth(square.roi, depthImage)
+        # # DEBUG
+        # if self.debug:
+        #     print("Number of Squares found: " + str(len(squares)))
+
+        # return squares
 
         # Trackbar for setting the Hough parameters
-    def track_bar(self, img, canny_img, intersections):
+    def track_bar(self, img, dilated_img, intersections):
         '''
         for mannually setting up values of Hough parameter to corretly detect the square corners
         '''
@@ -323,7 +367,7 @@ class image_processing():
         switch = '0 : NOT_ACTIVE \n 1 : ACTIVE'
         cv2.createTrackbar(switch, 'adjust_Hough_parameter', 0, 1, call_back)
         off = 0
-        while (off != 1):
+        while True:
             track_img = img.copy()
             cornerCounter = 0
             for corner in intersections:
@@ -340,6 +384,9 @@ class image_processing():
                 pass
             else:
                 off = cv2.getTrackbarPos('off', 'adjust_Hough_parameter')
+                if off == 1:
+                    print('corner is ' + str(len(corners)))
+                    break
                 thresholdx = cv2.getTrackbarPos(
                     'threshold', 'adjust_Hough_parameter')
                 minLineLengthy = cv2.getTrackbarPos(
@@ -348,9 +395,11 @@ class image_processing():
                     'max_line_gap', 'adjust_Hough_parameter')
 
                 hor, ver = self.houghLines(
-                    canny_img, img, thresholdx, minLineLengthy, maxLineGapz)
+                    dilated_img, img, thresholdx, minLineLengthy, maxLineGapz)
                 intersections = self.findIntersections(hor, ver, img)
-                corner, image = self.assignIntersections(img, intersections)
+                corners, sorted_intersections, image = self.assignIntersections(
+                    img, intersections)
+        return corners, sorted_intersections
 
     # Image_preprocessing
 
@@ -361,7 +410,7 @@ class image_processing():
         img = cv2.GaussianBlur(img, (kernelG, kernelG), 0)
 
         # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         adaptiveThresh = cv2.adaptiveThreshold(
             gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 1)
@@ -431,7 +480,7 @@ class image_processing():
 
         # creating ROI
         roi = cv2.polylines(
-            imgContours, [chessboardEdge], True, (0, 255, 255), thickness=3)
+            imgContours, [chessboardEdge], True, (0, 255, 255), thickness=1)
         # showing filtered contour image
         # DEBUG
         if self.debug:
@@ -468,20 +517,25 @@ class image_processing():
 if __name__ == "__main__":
 
     img = cv2.imread(
-        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/Static_images/optimum_lighting.png')
+        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/Static_images/windows_open (1).png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
     pre_canny = ip.cannyEdgeDetection(preprocessed_img)
+    dilated = ip.dilation(pre_canny, kernel_size=(9, 9), iterations=10)
     # Chessboard edges used to eliminate unwanted point in assign intersections function
     analysed_img, chessBoardEdges = ip.image_analysis(img, pre_canny)
     canny_img = ip.cannyEdgeDetection(analysed_img)
     hor, ver = ip.houghLines(canny_img, img)
     intersections = ip.findIntersections(hor, ver, img)
-    corner, image = ip.assignIntersections(img, intersections)
-    ip.track_bar(img, canny_img, corner)
-    squares = ip.makeSquares(corner, img)
+    corners, sorted_inersectioin, image = ip.assignIntersections(
+        img, intersections)
+    corners, sorted_inersectioin = ip.track_bar(img, canny_img, corners)
+    squares = ip.makeSquares(sorted_inersectioin, img, img)
 
     # ip.makeSquares(corner,image)
     cv2.imshow('Finalimg', analysed_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    '''
+    # check for float values of squate centers in makesquar
+    '''
