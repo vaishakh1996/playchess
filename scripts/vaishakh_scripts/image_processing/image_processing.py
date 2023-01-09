@@ -268,7 +268,7 @@ class image_processing():
                     sorted_intersections[i].append(intersections[k])
                     k += 1
             print(
-                f'sorted{sorted_intersections} ')
+                'sorted',(sorted_intersections))
         return intersections, sorted_intersections, image
 
         """
@@ -313,13 +313,14 @@ class image_processing():
             squareCenters = 0
 
             debugImg = image.copy()
+            squareCounter =0
             # for row in corners:
             for center_ in squares:
                 # for corner in row:
                 # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
                 # cornerCounter += 1
                 cv2.circle(debugImg, center_, 5, (0, 255, 0), -1)
-                cornerCounter += 1
+                squareCounter += 1
 
             cv2.imshow("Final centers", debugImg)
 
@@ -517,7 +518,7 @@ class image_processing():
 if __name__ == "__main__":
 
     img = cv2.imread(
-        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/Static_images/windows_open (1).png')
+        '/home/vaishakh/tiago_ws/src/playchess/scripts/vaishakh_scripts/Static_images/empty_chess_board.png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
     pre_canny = ip.cannyEdgeDetection(preprocessed_img)
