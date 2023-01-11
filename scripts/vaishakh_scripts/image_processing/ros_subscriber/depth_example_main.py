@@ -1,32 +1,28 @@
 #!/usr/bin/env python
 
-import rospy
-from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image
 import numpy as np
+import cv2
+
+import rospy
+from sensor_msgs.msg import Image
+import ros_numpy
 
 
-def convert_depth_image(ros_image):
-    bridge = CvBridge()
-    # Use cv_bridge() to convert the ROS image to OpenCV format
-    try:
-     # Convert the depth image using the default passthrough encoding
-        depth_image = bridge.imgmsg_to_cv2(
-            ros_image, "passthrough")
-    except CvBridgeError as e:
-        print(e)
-    # Convert the depth image to a Numpy array
-    depth_array = np.array(depth_image, dtype=np.float32)
-    print(depth_array)
-    rospy.loginfo(depth_array)
+class DepthSubscriber:
+    def __init__(self):
+        self.sub = rospy.Subscriber(
+            '/xtion/depth_registered/image', Image, self.callback)
 
-
-def pixel2depth():
-    rospy.init_node('pixel2depth', anonymous=True)
-    rospy.Subscriber("/xtion/depth_registered/image_raw", Image,
-                     callback=convert_depth_image, queue_size=1)
-    rospy.spin()
+    def callback(self, msg):
+        depth_data = ros_numpy.numpify(msg)
+        print(depth_data.shape)
 
 
 if __name__ == '__main__':
-    pixel2depth()
+    rospy.init_node('depth')
+    depth_image = DepthSubscriber()
+    try:
+        while not rospy.is_shutdown():
+            pass
+    except KeyboardInterrupt:
+        pass
