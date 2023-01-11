@@ -7,8 +7,9 @@ import math
 import sys
 import operator
 # user defined classes
+from useful_functions.perceptionboardClass import Board
 from useful_functions.perceptionLineClass import Line, filterClose
-from useful_functions.perceptionsquareClass import Square
+#from useful_functions.perceptionsquareClass import Square
 # acessing directories
 import os
 
@@ -23,15 +24,41 @@ PLAYCHESS_PKG_DIR = '/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_im
 
 
 class image_processing():
+    '''
+    class conataning function to process chessboard images and dect squares
+    '''
     def __init__(self):
-        self.debug = 0
+        # assign 1 if debug required or 0
+        self.debug = 0 
+
+    # Image_preprocessing
+    def preprocessing(self, img, kernelG=5):
+        '''
+        input image -> GaussianBlur -> Gray -> Adaptive Thrusholding
+        to obtain binarized image for canny
+        '''
+        img = cv2.GaussianBlur(img, (kernelG, kernelG), 0)
+
+        # Convert to grayscale
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        adaptiveThresh = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 1)
+
+        # Show  images for debug
+        if self.debug:
+            cv2.imshow('Gray', gray)
+            cv2.imshow("Adaptive_Thresholded", adaptiveThresh)
+            cv2.waitKey(0)
+
+        return adaptiveThresh
 
     # Canny edge function
     def cannyEdgeDetection(self, img):
         '''
         canny edge detection
-        1. used in image_analysis befor findContour
-        '''
+        1. used in image_analysis befor dilation and then findcountour
+        1. also used before hough lines       '''
         edges = cv2.Canny(img,
                           25,    # min_threshold: adjusting it helps to distinguish beteween brown boundary and black  square near to it
                           255
@@ -45,6 +72,9 @@ class image_processing():
         return edges
 
     def dilation(self, image, kernel_size=(1, 1), iterations=1):
+        '''
+        to improve against small light variation befor chess board countour detection
+        '''
         kernel = np.ones(kernel_size, np.uint8)
         dilated = cv2.dilate(image, kernel, iterations)
         if self.debug:
@@ -267,8 +297,8 @@ class image_processing():
                 for j in range(9):
                     sorted_intersections[i].append(intersections[k])
                     k += 1
-            print(
-                'sorted',(sorted_intersections))
+            print('sorted intersection')
+            print(sorted_intersections)
         return intersections, sorted_intersections, image
 
         """
@@ -313,14 +343,13 @@ class image_processing():
             squareCenters = 0
 
             debugImg = image.copy()
-            squareCounter =0
             # for row in corners:
             for center_ in squares:
                 # for corner in row:
                 # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
                 # cornerCounter += 1
                 cv2.circle(debugImg, center_, 5, (0, 255, 0), -1)
-                squareCounter += 1
+                squareCenters += 1
 
             cv2.imshow("Final centers", debugImg)
 
@@ -348,11 +377,22 @@ class image_processing():
         #     print("Number of Squares found: " + str(len(squares)))
 
         # return squares
+    
+    def bwe_assign(self,squares,image):
+        '''
+        assign initial BWE matrix to initial board state
+        '''
+        bwe_init= Board(squares)
+        bwe_init.draw(image)
+        if (self.debug==0):
+            print(bwe_init.square.draw(image))
+            
+
 
         # Trackbar for setting the Hough parameters
     def track_bar(self, img, dilated_img, intersections):
         '''
-        for mannually setting up values of Hough parameter to corretly detect the square corners
+        for mannually setting up values of Hough parameter to corretly detect 91  square corners
         '''
         def call_back(x):
             pass
@@ -402,27 +442,6 @@ class image_processing():
                     img, intersections)
         return corners, sorted_intersections
 
-    # Image_preprocessing
-
-    def preprocessing(self, img, kernelG=5):
-        '''
-        input image -> GaussianBlur -> Gray -> Adaptive Thrusholding
-        '''
-        img = cv2.GaussianBlur(img, (kernelG, kernelG), 0)
-
-        # Convert to grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        adaptiveThresh = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 1)
-
-        # Show  images for debug
-        if self.debug:
-            cv2.imshow('Gray', gray)
-            cv2.imshow("Adaptive_Thresholded", adaptiveThresh)
-            cv2.waitKey(0)
-
-        return adaptiveThresh
 
     # Image analysis
     def image_analysis(self, img, preprocessed_img):
@@ -518,7 +537,7 @@ class image_processing():
 if __name__ == "__main__":
 
     img = cv2.imread(
-        '/home/vaishakh/tiago_ws/src/playchess/scripts/vaishakh_scripts/Static_images/empty_chess_board.png')
+        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/Static_images/windows_open (1).png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
     pre_canny = ip.cannyEdgeDetection(preprocessed_img)
@@ -532,6 +551,7 @@ if __name__ == "__main__":
         img, intersections)
     corners, sorted_inersectioin = ip.track_bar(img, canny_img, corners)
     squares = ip.makeSquares(sorted_inersectioin, img, img)
+    
 
     # ip.makeSquares(corner,image)
     cv2.imshow('Finalimg', analysed_img)

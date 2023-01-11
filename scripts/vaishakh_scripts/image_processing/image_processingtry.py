@@ -235,6 +235,7 @@ class image_processing():
         del intersections[-11:len(intersections)]
         del intersections[0:len(intersections):11]
         del intersections[9:len(intersections):10]
+        del intersections[81:]
         print(intersections)
 
         print(type(intersections))
@@ -297,7 +298,7 @@ class image_processing():
         for i in range(8):
             for j in range(8):
                 # Make the square - yay!
-                #position = letters[-i-1] + numbers[-j-1]
+                # position = letters[-i-1] + numbers[-j-1]
                 c1 = corners[i][j]
                 c2 = corners[i][j+1]
                 c3 = corners[i+1][j]
@@ -312,7 +313,7 @@ class image_processing():
                 squares.append(center)
         print(squares, len(squares))
         # DEBUG
-        if self.debug :
+        if self.debug:
 
             squareCenters = 0
 
@@ -335,31 +336,34 @@ class image_processing():
         labeledSquares = []
         alpha = 0
         num = 0
-        #for Tiago playing as BLACK
-        if not side:
-            letters.sort(reverse=True)
-            for center_ in squares:
-                
-                    labeledSquares.append((center_[0], center_[
-                                         1],letters[alpha]+numbers[num]))
-                    alpha +=1
-                    if alpha > 7:
-                        alpha =0
-                        if num !=7:
-                            num +=1 
-        #for TIAGo playing as WHITE
-        else:
+
+        # for TIAGo playing as WHITE
+        if side:
             numbers.sort(reverse=True)
             for center_ in squares:
-                
-                    labeledSquares.append((center_[0], center_[
-                                         1],letters[alpha]+numbers[num]))
-                    alpha +=1
-                    if alpha > 7:
-                        alpha =0
-                        if num !=7:
-                            num +=1 
-        #DEbug
+
+                labeledSquares.append((center_[0], center_[
+                    1], letters[alpha]+numbers[num]))
+                alpha += 1
+                if alpha > 7:
+                    alpha = 0
+                    if num != 7:
+                        num += 1
+
+        # for Tiago playing as BLACK
+        else:
+            letters.sort(reverse=True)
+            for center_ in squares:
+
+                labeledSquares.append((center_[0], center_[
+                    1], letters[alpha]+numbers[num]))
+                alpha += 1
+                if alpha > 7:
+                    alpha = 0
+                    if num != 7:
+                        num += 1
+
+        # DEbug
         if self.debug == 0:
             debugImg = image.copy()
             squareCenters = 0
@@ -368,14 +372,14 @@ class image_processing():
                 # for corner in row:
                 # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
                 # cornerCounter += 1
-                cv2.circle(debugImg, (center_[0],center_[1]), 5, (0, 255, 0), -1)
-                cv2.putText(debugImg, center_[2], (center_[0],center_[1]),cv2.FONT_HERSHEY_SIMPLEX, 
-                   0.5, (0,0,255), 1)
+                cv2.circle(debugImg, (center_[0], center_[
+                           1]), 5, (0, 255, 0), -1)
+                cv2.putText(debugImg, center_[2], (center_[0], center_[1]), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5, (0, 0, 255), 1)
                 squareCenters += 1
             cv2.imshow("Labeled centers", debugImg)
 
-        print(labeledSquares,len(labeledSquares))
-                        
+        print(labeledSquares, len(labeledSquares))
 
         #         square.draw(image)
 
