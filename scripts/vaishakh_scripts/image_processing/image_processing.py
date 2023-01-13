@@ -7,6 +7,7 @@ import math
 import sys
 import operator
 # user defined classes
+from useful_functions.homographic_transformation import HOMO_TRANSFOR as hf
 from useful_functions.perceptionLineClass import Line, filterClose
 # from useful_functions.perceptionsquareClass import Square
 # acessing directories
@@ -24,7 +25,7 @@ PLAYCHESS_PKG_DIR = '/home/vaishakh/playchess/scripts/vaishakh_scripts/Static_im
 
 class image_processing():
     def __init__(self):
-        self.debug = 1
+        self.debug = False
 
     # Canny edge function
     def cannyEdgeDetection(self, img):
@@ -279,10 +280,10 @@ class image_processing():
     SQUARE INSTANTIATION
     """
 
-    def makeSquares(self, corners, depthImage, image, side=1):
+    def makeSquares(self, corners, depthImage, image, side=False):
         """
         Instantiates the 64 squares given 81 corner points.
-        side takes in 0-> Black or 1-> White according to TIAGo side 
+        side takes in False-> Black or True-> White according to TIAGo side 
         """
 
         # List of Square objects
@@ -571,7 +572,7 @@ class image_processing():
 if __name__ == "__main__":
 
     img = cv2.imread(
-        '/home/vaishakh/Back_up/playchess/scripts/vaishakh_scripts/Static_images/test.png')
+        '/home/pal/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/optimum_lighting.png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
     pre_canny = ip.cannyEdgeDetection(preprocessed_img)
@@ -585,8 +586,11 @@ if __name__ == "__main__":
         img, intersections)
     corners, sorted_inersectioin = ip.track_bar(img, canny_img, corners)
     squares = ip.makeSquares(sorted_inersectioin, img, img)
+    transformed_chess_board = hf(img,chessBoardEdges,True)
+    hft_img=transformed_chess_board.transform()
+    print(chessBoardEdges[1,0,1])
 
-    # ip.makeSquares(corner,image)
+
     cv2.imshow('Finalimg', analysed_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
