@@ -280,7 +280,7 @@ class image_processing():
     SQUARE INSTANTIATION
     """
 
-    def makeSquares(self, corners, depthImage, image, side=False):
+    def makeSquares(self, corners, depthImage, image, side=True):
         """
         Instantiates the 64 squares given 81 corner points.
         side takes in False-> Black or True-> White according to TIAGo side 
@@ -572,24 +572,36 @@ class image_processing():
 if __name__ == "__main__":
 
     img = cv2.imread(
-        '/home/pal/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/optimum_lighting.png')
+        '/home/vaishakh/Back_up/playchess/scripts/vaishakh_scripts/image_processing/Static_images/non_empty_chess_board.png')
     ip = image_processing()
     preprocessed_img = ip.preprocessing(img)
     pre_canny = ip.cannyEdgeDetection(preprocessed_img)
     dilated = ip.dilation(pre_canny, kernel_size=(9, 9), iterations=10)
     # Chessboard edges used to eliminate unwanted point in assign intersections function
     analysed_img, chessBoardEdges = ip.image_analysis(img, pre_canny)
-    canny_img = ip.cannyEdgeDetection(analysed_img)
-    hor, ver = ip.houghLines(canny_img, img)
-    intersections = ip.findIntersections(hor, ver, img)
-    corners, sorted_inersectioin, image = ip.assignIntersections(
-        img, intersections)
-    corners, sorted_inersectioin = ip.track_bar(img, canny_img, corners)
-    squares = ip.makeSquares(sorted_inersectioin, img, img)
-    transformed_chess_board = hf(img,chessBoardEdges,True)
-    hft_img=transformed_chess_board.transform()
-    print(chessBoardEdges[1,0,1])
+    # canny_img = ip.cannyEdgeDetection(analysed_img)
+    # hor, ver = ip.houghLines(canny_img, img)
+    # intersections = ip.findIntersections(hor, ver, img)
+    # corners, sorted_inersectioin, image = ip.assignIntersections(
+    #     img, intersections)
+    # corners, sorted_inersectioin = ip.track_bar(img, canny_img, corners)
+    # squares = ip.makeSquares(sorted_inersectioin, img, img)
+    # transformed_chess_board = hf(img, chessBoardEdges, True)
+    # hft_img = transformed_chess_board.transform()
 
+    #############################################################################
+    transformed_chess_board = hf(img, chessBoardEdges, True)
+    hft_img = transformed_chess_board.transform()
+    canny_img = ip.cannyEdgeDetection(hft_img)
+    cv2.imshow('canny', canny_img)
+    hor, ver = ip.houghLines(canny_img, hft_img)
+    intersections = ip.findIntersections(hor, ver, hft_img)
+    corners, sorted_inersectioin, image = ip.assignIntersections(
+        hft_img, intersections)
+    corners, sorted_inersectioin = ip.track_bar(hft_img, canny_img, corners)
+    squares = ip.makeSquares(sorted_inersectioin, hft_img, hft_img)
+
+    #############################################################################
 
     cv2.imshow('Finalimg', analysed_img)
     cv2.waitKey(0)
