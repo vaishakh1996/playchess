@@ -6,6 +6,7 @@ import numpy as np
 import math
 import sys
 import operator
+import yaml
 # ROS Image messages
 # from sensor_msgs.msg import CompressedImage, Image
 # ROS Image message --> Open CV2 image converter
@@ -26,8 +27,8 @@ PLAYCHESS_PKG_DIR = '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaisha
 
 
 class ImageProcessing():
-# Class containing functions to process chessboard images and detect squares.
-# oder of execution of functions defined in segmentation oder function just above if __name__ line
+    # Class containing functions to process chessboard images and detect squares.
+    # oder of execution of functions defined in segmentation oder function just above if __name__ line
     def __init__(self):
         self.debug = 0
 
@@ -115,8 +116,8 @@ class ImageProcessing():
         '''
 
         # DEBUG TO SHOW LINES
-        #print(len(ver))
-        #print(len(hor))
+        # print(len(ver))
+        # print(len(hor))
         if self.debug:
             debugImg = img.copy()
             self.drawLines(debugImg, ver)
@@ -273,8 +274,8 @@ class ImageProcessing():
                 for j in range(9):
                     sorted_intersections[i].append(intersections[k])
                     k += 1
-            #print('sorted intersection')
-            #print(sorted_intersections)
+            # print('sorted intersection')
+            # print(sorted_intersections)
         return intersections, sorted_intersections, image
 
         """
@@ -294,7 +295,7 @@ class ImageProcessing():
         # Lists containing positional and index information
         letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         numbers = ['1', '2', '3', '4', '5', '6', '7', '8']
-        row=[]
+        row = []
         count = 0
 
         for i in range(8):
@@ -311,7 +312,7 @@ class ImageProcessing():
 
                 center = (centerx,
                           centery)
-                #print(c1, c2, c3, c4, center)
+                # print(c1, c2, c3, c4, center)
                 squares.append(center)
         # print(squares, len(squares))
         rows = [[], [], [], [], [], [], [], []]
@@ -321,13 +322,10 @@ class ImageProcessing():
                 for j in range(8):
                     rows[i].append(squares[k])
                     k += 1
-            #print('sorted row')
-            #print(rows,len(rows))
-        
+            # print('sorted row')
+            # print(rows,len(rows))
 
         # DEBUG
-                    
-        
 
         squareCenters = 0
         debugImg = image.copy()
@@ -378,7 +376,7 @@ class ImageProcessing():
                         num += 1
 
         # DEbug
-        if self.debug :
+        if self.debug:
             debugImg1 = image.copy()
             squareCenters = 0
             # for row in corners:
@@ -392,10 +390,8 @@ class ImageProcessing():
                             0.5, (0, 0, 255), 1)
                 squareCenters += 1
             cv2.imshow("Labeled centers", debugImg1)
-            
 
             print(labeledSquares, len(labeledSquares))
-
 
         #         square.draw(image)
 
@@ -415,7 +411,7 @@ class ImageProcessing():
         # if self.debug:
         #     print("Number of Squares found: " + str(len(squares)))
 
-        return squares, labeledSquares,rows, debugImg
+        return squares, labeledSquares, rows, debugImg
 
     # Trackbar for setting the Hough parameters
 
@@ -455,7 +451,7 @@ class ImageProcessing():
             else:
                 off = cv2.getTrackbarPos('off', 'adjust_Hough_parameter')
                 if off == 1:
-                    #print('corner is ' + str(len(corners)))
+                    # print('corner is ' + str(len(corners)))
                     break
                 thresholdx = cv2.getTrackbarPos(
                     'threshold', 'adjust_Hough_parameter')
@@ -584,39 +580,44 @@ class ImageProcessing():
     def segmentation_sequence(self, img):
         preprocessed_img = self.preprocessing(img)
         pre_canny = self.cannyEdgeDetection(preprocessed_img)
-        dilated = self.dilation(pre_canny, kernel_size=(3, 3), iterations=5)
+        dilated = self.dilation(pre_canny, kernel_size=(5, 5), iterations=5)
         # Chessboard edges used to eliminate unwanted point in assign intersections function
-        analysed_img, chessBoardEdges,annotated_image_vertices = self.image_analysis(img, dilated)
+        analysed_img, chessBoardEdges, annotated_image_vertices = self.image_analysis(
+            img, dilated)
         canny_img = self.cannyEdgeDetection(analysed_img)
         hor, ver = self.houghLines(canny_img, img)
         intersections = self.findIntersections(hor, ver, img)
         corners, sorted_inersectioin, image = self.assignIntersections(
             img, intersections)
         corners, sorted_inersectioin = self.track_bar(img, canny_img, corners)
-        squares, labelledSquares,rows,annotated_image = self.makeSquares(
+        squares, labelledSquares, rows, annotated_image = self.makeSquares(
             sorted_inersectioin, img, side=True)
-        transformed_chess_board = hf(img, chessBoardEdges, True)
-        #cv2.imshow('image',annotated_image_vertices)
-        print(chessBoardEdges)
-        #hft_img = transformed_chess_board.transform()
-        return rows, annotated_image,annotated_image_vertices,len(squares),chessBoardEdges
+        chessBoardEdgesS_with_out_borders = [
+            corners[0], corners[8], corners[80], corners[72]]
+        transformed_chess_board = hf(
+            img, chessBoardEdgesS_with_out_borders, True)
+        # print(chessBoardEdges)
+        with open(r'/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/yml/store_file.yaml', 'w') as file:
+            documents = yaml.dump(chessBoardEdgesS_with_out_borders, file)
+        hft_img = transformed_chess_board.transform()
+        return rows, annotated_image, annotated_image_vertices, len(squares), chessBoardEdges, chessBoardEdgesS_with_out_borders
 
 
 def main():
-	#rospy.init_node('image_processor')
-	# /home/silvia/tiago_public_ws/src/tiago_playchess/Images_chessboard_empty/camera_image1.jpeg
+    # rospy.init_node('image_processor')
+    # /home/silvia/tiago_public_ws/src/tiago_playchess/Images_chessboard_empty/camera_image1.jpeg
     image = cv2.imread(PLAYCHESS_PKG_DIR + '/test.png')
-    image = cv2.imread('/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/empty_chess_board.png')
+    image = cv2.imread(
+        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/test.png')
     image_processing = ImageProcessing()
     image_processing.segmentation_sequence(image)
     cv2.waitKey(10000)
     cv2.destroyAllWindows()
 
-
  # MAIN
 if __name__ == "__main__":
 
-     main()
+    main()
     #############################################################################
     # transformed_chess_board = hf(img, chessBoardEdges, True)
     # hft_img = transformed_chess_board.transform()
@@ -630,5 +631,3 @@ if __name__ == "__main__":
     # squares = ip.makeSquares(sorted_inersectioin, hft_img, hft_img)
 
     #############################################################################
-
-
