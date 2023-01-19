@@ -294,6 +294,8 @@ class ImageProcessing():
         # Lists containing positional and index information
         letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         numbers = ['1', '2', '3', '4', '5', '6', '7', '8']
+        row=[]
+        count = 0
 
         for i in range(8):
             for j in range(8):
@@ -312,19 +314,31 @@ class ImageProcessing():
                 #print(c1, c2, c3, c4, center)
                 squares.append(center)
         # print(squares, len(squares))
+        rows = [[], [], [], [], [], [], [], []]
+        k = 0
+        if len(squares) == 64:
+            for i in range(8):
+                for j in range(8):
+                    rows[i].append(squares[k])
+                    k += 1
+            #print('sorted row')
+            #print(rows,len(rows))
+        
+
         # DEBUG
+                    
+        
+
+        squareCenters = 0
+        debugImg = image.copy()
+        # for row in corners:
+        for center_ in squares:
+            # for corner in row:
+            # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
+            # cornerCounter += 1
+            cv2.circle(debugImg, center_, 5, (0, 255, 0), -1)
+            squareCenters += 1
         if self.debug:
-
-            squareCenters = 0
-
-            debugImg = image.copy()
-            # for row in corners:
-            for center_ in squares:
-                # for corner in row:
-                # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
-                # cornerCounter += 1
-                cv2.circle(debugImg, center_, 5, (0, 255, 0), -1)
-                squareCenters += 1
             cv2.imshow("Final centers", debugImg)
 
             print("")
@@ -364,20 +378,20 @@ class ImageProcessing():
                         num += 1
 
         # DEbug
-        if self.debug ==0:
-            debugImg = image.copy()
+        if self.debug :
+            debugImg1 = image.copy()
             squareCenters = 0
             # for row in corners:
             for center_ in labeledSquares:
                 # for corner in row:
                 # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
                 # cornerCounter += 1
-                cv2.circle(debugImg, (center_[0], center_[
+                cv2.circle(debugImg1, (center_[0], center_[
                            1]), 5, (0, 255, 0), -1)
-                cv2.putText(debugImg, center_[2], (center_[0], center_[1]), cv2.FONT_HERSHEY_SIMPLEX,
+                cv2.putText(debugImg1, center_[2], (center_[0], center_[1]), cv2.FONT_HERSHEY_SIMPLEX,
                             0.5, (0, 0, 255), 1)
                 squareCenters += 1
-            cv2.imshow("Labeled centers", debugImg)
+            cv2.imshow("Labeled centers", debugImg1)
             
 
             print(labeledSquares, len(labeledSquares))
@@ -401,7 +415,7 @@ class ImageProcessing():
         # if self.debug:
         #     print("Number of Squares found: " + str(len(squares)))
 
-        return squares, labeledSquares
+        return squares, labeledSquares,rows, debugImg
 
     # Trackbar for setting the Hough parameters
 
@@ -536,7 +550,7 @@ class ImageProcessing():
 
         # creating ROI
         roi = cv2.polylines(
-            imgContours, [chessboardEdge], True, (0, 255, 255), thickness=2)
+            imgContours, [chessboardEdge], True, (255, 0, 0), thickness=2)
         # showing filtered contour image
         # DEBUG
         if self.debug:
@@ -565,24 +579,27 @@ class ImageProcessing():
             # cv2.imshow("1 Masked", extracted)
             cv2.waitKey(0)
 
-        return extracted, chessboardEdge
+        return extracted, chessboardEdge, imgContours
 
     def segmentation_sequence(self, img):
         preprocessed_img = self.preprocessing(img)
         pre_canny = self.cannyEdgeDetection(preprocessed_img)
         dilated = self.dilation(pre_canny, kernel_size=(3, 3), iterations=5)
         # Chessboard edges used to eliminate unwanted point in assign intersections function
-        analysed_img, chessBoardEdges = self.image_analysis(img, dilated)
+        analysed_img, chessBoardEdges,annotated_image_vertices = self.image_analysis(img, dilated)
         canny_img = self.cannyEdgeDetection(analysed_img)
         hor, ver = self.houghLines(canny_img, img)
         intersections = self.findIntersections(hor, ver, img)
         corners, sorted_inersectioin, image = self.assignIntersections(
             img, intersections)
         corners, sorted_inersectioin = self.track_bar(img, canny_img, corners)
-        squares, labelledSquares = self.makeSquares(
+        squares, labelledSquares,rows,annotated_image = self.makeSquares(
             sorted_inersectioin, img, side=True)
         transformed_chess_board = hf(img, chessBoardEdges, True)
+        #cv2.imshow('image',annotated_image_vertices)
+        print(chessBoardEdges)
         #hft_img = transformed_chess_board.transform()
+        return rows, annotated_image,annotated_image_vertices,len(squares),chessBoardEdges
 
 
 def main():
@@ -592,7 +609,7 @@ def main():
     image = cv2.imread('/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/empty_chess_board.png')
     image_processing = ImageProcessing()
     image_processing.segmentation_sequence(image)
-    cv2.waitKey(1000)
+    cv2.waitKey(10000)
     cv2.destroyAllWindows()
 
 

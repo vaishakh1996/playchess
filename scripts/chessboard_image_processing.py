@@ -22,7 +22,7 @@ PLAYCHESS_PKG_DIR = '/home/luca/tiago_public_ws/src/tiago_playchess'
 class ImageProcessing:
 #Class containing functions to process chessboard images and detect squares.
 	def __init__(self):
-		self.verbose = False
+		self.verbose = 0
 
 	def grayscale(self, image):
 		#Conversion to grayscale
@@ -397,7 +397,7 @@ class ImageProcessing:
 				print(right_square)
 				print(left_square)
 		if self.verbose:
-			cv2.imshow('Squares segmented', squares)
+			cv2.imshow('Squares segmented_annotated_image', squares)
 			cv2.imwrite(os.path.join(PLAYCHESS_PKG_DIR + '/Images/Segmentazione', '9-squaresSegmented.png'), squares)
 		return rows, contours, squares, self.approx_square, final_squares_number, self.approx
 
@@ -483,12 +483,14 @@ class ImageProcessing:
 		dilated_masked = self.dilation(canny_masked, (3,3)) #Detection of the edges using Canny method
 		rows, __, annotated_image, __, final_squares_number, __ = self.squares_contouring(dilated_masked, 10, 60, masked, False) #It returns a list of the squares' centers, divided by rows
 		#hough_masked = self.hough_lines(dilated_masked, masked) #Detection of straight lines on the image using the Hough transform
+		print(vertices)
 		return rows, annotated_image, annotated_image_vertices, final_squares_number, vertices
 
 
 def main():
-	rospy.init_node('image_processor')
-	image = cv2.imread(PLAYCHESS_PKG_DIR + '/Images/IMAGES/camera_image1.jpeg') #/home/silvia/tiago_public_ws/src/tiago_playchess/Images_chessboard_empty/camera_image1.jpeg
+	#rospy.init_node('image_processor')
+	#image = cv2.imread(PLAYCHESS_PKG_DIR + '/Images/IMAGES/camera_image1.jpeg') #/home/silvia/tiago_public_ws/src/tiago_playchess/Images_chessboard_empty/camera_image1.jpeg
+	image = cv2.imread('/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/empty_chess_board.png')
 	image_processing = ImageProcessing()
 	image_processing.segmentation_sequence(image)
 	cv2.waitKey(0)
