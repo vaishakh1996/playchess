@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
 class for homographic transformation of perspective chess board image
 '''
@@ -40,7 +41,7 @@ class HOMO_TRANSFOR():
             print('chess board corners in cw order from top left', chess_corner)
             # cv2.imshow("Source Image", self.im_src)
             # for i in range(64):
-            cv2.rectangle(im_out, (360, 360), (420, 420), (0, 255, 0), 3)
+            # cv2.rectangle(im_out, (360, 360), (420, 420), (0, 255, 0), 3)
             cv2.imshow("Warped Source Image", im_out)
 
             cv2.waitKey(0)
