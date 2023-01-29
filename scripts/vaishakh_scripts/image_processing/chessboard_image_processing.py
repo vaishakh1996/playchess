@@ -2,6 +2,7 @@
 
 # Rospy for the subscriber
 import rospy
+import pickle
 import numpy as np
 import math
 import sys
@@ -598,8 +599,9 @@ class ImageProcessing():
         # img, chessBoardEdgesS_with_out_borders, True)
         # print(chessBoardEdges)
         # save edges of chess board with out corners for detecting moves in chess_move_detection
-        with open(r'/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/yml/store_chess_board_edges.yaml', 'w') as file:
-            documents = yaml.dump(chessBoardEdgesS_with_out_borders, file)
+        print(chessBoardEdgesS_with_out_borders)
+        with open(r'/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/pickle/store_chess_board_edges.pickle', 'wb') as file:
+            pickle.dump(chessBoardEdgesS_with_out_borders, file)
         # hft_img = transformed_chess_board.transform()
         return rows, annotated_image, annotated_image_vertices, len(squares), chessBoardEdges, chessBoardEdgesS_with_out_borders
 

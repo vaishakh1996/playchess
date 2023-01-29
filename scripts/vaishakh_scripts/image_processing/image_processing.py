@@ -334,9 +334,9 @@ class ImageProcessing():
             # for corner in row:
             # cv2.circle(debugImg, corner, 10, (0,255,0), 1)
             # cornerCounter += 1
-            cv2.circle(debugImg, center_, 5, (0, 255, 0), -1)
+            cv2.circle(debugImg, squares[8], 5, (0, 255, 0), -1)
             squareCenters += 1
-        if self.debug:
+        if self.debug==0:
             cv2.imshow("Final centers", debugImg)
 
             print("")
@@ -597,9 +597,10 @@ class ImageProcessing():
         transformed_chess_board = hf(
             img, chessBoardEdgesS_with_out_borders, True)
         # print(chessBoardEdges)
-        with open(r'/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/yml/store_file.yaml', 'w') as file:
-            documents = yaml.dump(chessBoardEdgesS_with_out_borders, file)
+        # with open(r'/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/yml/store_file.yaml', 'w') as file:
+        #     documents = yaml.dump(chessBoardEdgesS_with_out_borders, file)
         hft_img = transformed_chess_board.transform()
+        print(rows)
         return rows, annotated_image, annotated_image_vertices, len(squares), chessBoardEdges, chessBoardEdgesS_with_out_borders
 
 
@@ -608,7 +609,7 @@ def main():
     # /home/silvia/tiago_public_ws/src/tiago_playchess/Images_chessboard_empty/camera_image1.jpeg
     image = cv2.imread(PLAYCHESS_PKG_DIR + '/test.png')
     image = cv2.imread(
-        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/test.png')
+        '/home/vaishakh/tiago_public_ws/src/playchess/scripts/vaishakh_scripts/image_processing/Static_images/camera_image319.jpeg')
     image_processing = ImageProcessing()
     image_processing.segmentation_sequence(image)
     cv2.waitKey(10000)
